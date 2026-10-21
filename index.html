@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>City General Hospital</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0; padding: 0; background: var(--bg); color: var(--text);
+      display: flex; height: 100vh; overflow: hidden;
+    }
+    aside {
+      width: 260px; background: #ffffff; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .logo-area {
+      padding: 20px; font-size: 1.2rem; font-weight: bold; background: var(--primary); color: white;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nav-links { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto; }
+    .nav-links li a {
+      display: block; padding: 12px 20px; color: var(--text); text-decoration: none; font-weight: 500;
+      border-left: 4px solid transparent; transition: all 0.2s;
+    }
+    .nav-links li a:hover, .nav-links li a.active {
+      background: #f1f5f9; color: var(--primary); border-left-color: var(--primary);
+    }
+    .sidebar-footer { padding: 15px 20px; border-top: 1px solid var(--border); }
+    .sample-btn {
+      width: 100%; padding: 10px; background: var(--success); color: white; border: none;
+      border-radius: 4px; font-weight: bold; cursor: pointer;
+    }
+    .sample-btn:hover { background: #059669; }
+
+    main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    header {
+      padding: 15px 30px; background: #ffffff; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .content-area { flex: 1; padding: 30px; overflow-y: auto; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    h2 { margin-top: 0; color: var(--primary-dark); }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .stat-card h3 { margin: 0 0 10px; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; }
+    .stat-card .val { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+
+    form { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; max-width: 600px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+    input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; }
+    button[type="submit"], .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    button[type="submit"]:hover, .btn:hover { background: var(--primary-dark); }
+
+    .table-wrap { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+    th { background: #f8fafc; font-weight: 600; }
+
+    .filter-bar { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+    .filter-bar .form-group { margin-bottom: 0; flex: 1; }
+
+    /* Chat view styles */
+    .chat-container { display: flex; flex-direction: column; height: calc(100vh - 140px); background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+    .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .msg { max-width: 75%; padding: 12px 16px; border-radius: 8px; line-height: 1.5; font-size: 0.95rem; }
+    .msg.user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+    .msg.assistant { background: #f1f5f9; color: var(--text); align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid var(--border); }
+    .chat-input-bar { padding: 15px; background: #ffffff; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    .chat-input-bar input { flex: 1; }
+  </style>
+</head>
+<body>
+
+  <aside>
+    <div class="logo-area">
+      <span>🏥 City General</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#" onclick="switchView('dashboard', this)" class="active">Dashboard</a></li>
+      <li><a href="#" onclick="switchView('patients', this)">Patient Registration</a></li>
+      <li><a href="#" onclick="switchView('visits', this)">Doctor Visit & Prescription</a></li>
+      <li><a href="#" onclick="switchView('labs', this)">Lab Tests</a></li>
+      <li><a href="#" onclick="switchView('billing', this)">Billing & Payments</a></li>
+      <li><a href="#" onclick="switchView('report-collection', this)">Daily Collection Report</a></li>
+      <li><a href="#" onclick="switchView('report-patients', this)">Patient List Report</a></li>
+      <li><a href="#" onclick="switchView('report-doctors', this)">Doctor-wise Report</a></li>
+      <li><a href="#" onclick="switchView('report-labs', this)">Lab Test Report</a></li>
+      <li><a href="#" onclick="switchView('chat', this)">🤖 AI Report Chat</a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <button class="sample-btn" onclick="loadSampleData()">Load Sample Data</button>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <h3 id="view-title" style="margin:0;">Dashboard</h3>
+      <span id="current-date" style="color: var(--text-muted); font-size: 0.9rem;"></span>
+    </header>
+
+    <div class="content-area">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view active">
+        <h2>Hospital Overview</h2>
+        <div class="card-grid">
+          <div class="stat-card">
+            <h3>Total Patients</h3>
+            <div class="val" id="dash-patients">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Money Collected Today</h3>
+            <div class="val" id="dash-collection">Tk 0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Pending Lab Tests</h3>
+            <div class="val" id="dash-pending-labs">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATIENTS -->
+      <div id="view-patients" class="view">
+        <h2>Patient Registration</h2>
+        <form onsubmit="handlePatientSubmit(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="pat-name" required placeholder="e.g. Rahim Uddin">
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="pat-age" required min="0" max="120">
+          </div>
+          <div class="form-group">
+            <label>Sex</label>
+            <select id="pat-sex">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="pat-phone" required placeholder="017xxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <textarea id="pat-address" rows="2" required placeholder="City, Area"></textarea>
+          </div>
+          <button type="submit">Register Patient</button>
+        </form>
+
+        <h3>Registered Patients</h3>
+        <input type="text" id="pat-search" placeholder="Search patients by name or phone..." oninput="renderPatients()" style="margin-bottom: 15px; max-width: 400px;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Sex</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Registered Date</th>
+              </tr>
+            </thead>
+            <tbody id="patients-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DOCTOR VISIT -->
+      <div id="view-visits" class="view">
+        <h2>Doctor Visit & Prescription</h2>
+        <form onsubmit="handleVisitSubmit(event)">
+          <div class="form-group">
+            <label>Select Patient</label>
+            <select id="visit-patient" required></select>
+          </div>
+          <div class="form-group">
+            <label>Select Doctor</label>
+            <select id="visit-doctor" required>
+              <option value="Dr. Rahman (Medicine)">Dr. Rahman (Medicine) - Fee: Tk 1,000</option>
+              <option value="Dr. Sultana (Cardiology)">Dr. Sultana (Cardiology) - Fee: Tk 1,500</option>
+              <option value="Dr. Ahmed (Pediatrics)">Dr. Ahmed (Pediatrics) - Fee: Tk 800</option>
+              <option value="Dr. Karim (Surgery)">Dr. Karim (Surgery) - Fee: Tk 1,200</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Problem / Diagnosis</label>
+            <textarea id="visit-problem" rows="2" required placeholder="Fever, cough..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Prescribed Medicines</label>
+            <textarea id="visit-medicines" rows="2" required placeholder="Napa Extra 1+1+1..."></textarea>
+          </div>
+          <button type="submit">Save Visit & Add Fee</button>
+        </form>
+      </div>
+
+      <!-- LAB TESTS -->
+      <div id="view-labs" class="view">
+        <h2>Lab Test Orders</h2>
+        <form onsubmit="handleLabSubmit(event)">
+          <div class="form-group">
+            <label>Select Patient</label>
+            <select id="lab-patient" required></select>
+          </div>
+          <div class="form-group">
+            <label>Test Item</label>
+            <select id="lab-test-item" required onchange="updateLabPrice()">
+              <option value="CBC|500">CBC (Complete Blood Count) - Tk 500</option>
+              <option value="X-Ray Chest|800">X-Ray Chest - Tk 800</option>
+              <option value="Blood Sugar|300">Blood Sugar - Tk 300</option>
+              <option value="USG Abdomen|1200">USG Abdomen - Tk 1,200</option>
+              <option value="Lipid Profile|1000">Lipid Profile - Tk 1,000</option>
+            </select>
+          </div>
+          <button type="submit">Order Test</button>
+        </form>
+
+        <h3>Ordered Tests</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Test ID</th>
+                <th>Patient Name</th>
+                <th>Test Name</th>
+                <th>Cost (Tk)</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="labs-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BILLING -->
+      <div id="view-billing" class="view">
+        <h2>Billing & Payments</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient ID</th>
+                <th>Patient Name</th>
+                <th>Total Bill (Tk)</th>
+                <th>Paid (Tk)</th>
+                <th>Due (Tk)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="billing-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORT: DAILY COLLECTION -->
+      <div id="view-report-collection" class="view">
+        <h2>Daily Collection Report</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" id="col-from" onchange="renderCollectionReport()">
+          </div>
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" id="col-to" onchange="renderCollectionReport()">
+          </div>
+          <button class="btn" onclick="window.print()">Print Report</button>
+        </div>
+        <div class="card-grid">
+          <div class="stat-card">
+            <h3>Visit Fees Collected</h3>
+            <div class="val" id="rep-col-visits">Tk 0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Lab Fees Collected</h3>
+            <div class="val" id="rep-col-labs">Tk 0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Total Collection</h3>
+            <div class="val" id="rep-col-total">Tk 0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT: PATIENTS -->
+      <div id="view-report-patients" class="view">
+        <h2>Patient List Report</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" id="pat-rep-from" onchange="renderPatientReport()">
+          </div>
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" id="pat-rep-to" onchange="renderPatientReport()">
+          </div>
+          <button class="btn" onclick="window.print()">Print Report</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Sex</th>
+                <th>Phone</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="rep-patients-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORT: DOCTOR-WISE -->
+      <div id="view-report-doctors" class="view">
+        <h2>Doctor-wise Report</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" id="doc-rep-from" onchange="renderDoctorReport()">
+          </div>
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" id="doc-rep-to" onchange="renderDoctorReport()">
+          </div>
+          <button class="btn" onclick="window.print()">Print Report</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Doctor Name</th>
+                <th>Total Visits</th>
+                <th>Total Fees Collected (Tk)</th>
+              </tr>
+            </thead>
+            <tbody id="rep-doctors-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORT: LAB TESTS -->
+      <div id="view-report-labs" class="view">
+        <h2>Lab Test Report</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" id="lab-rep-from" onchange="renderLabReport()">
+          </div>
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" id="lab-rep-to" onchange="renderLabReport()">
+          </div>
+          <button class="btn" onclick="window.print()">Print Report</button>
+        </div>
+        <div class="card-grid">
+          <div class="stat-card">
+            <h3>Total Ordered</h3>
+            <div class="val" id="rep-lab-total">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Done</h3>
+            <div class="val" id="rep-lab-done">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Pending</h3>
+            <div class="val" id="rep-lab-pending">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI CHAT -->
+      <div id="view-chat" class="view">
+        <h2>AI Report Assistant</h2>
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg assistant">Hello! I am your hospital report assistant. Ask me anything about collections, patients, doctors, or lab tests based on your records.</div>
+          </div>
+          <div class="chat-input-bar">
+            <input type="text" id="chat-input" placeholder="e.g. How much did we collect today?" onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn" onclick="sendChatMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let db = {
+      patients: JSON.parse(localStorage.getItem('hm_patients') || '[]'),
+      visits: JSON.parse(localStorage.getItem('hm_visits') || '[]'),
+      labs: JSON.parse(localStorage.getItem('hm_labs') || '[]'),
+      payments: JSON.parse(localStorage.getItem('hm_payments') || '[]')
+    };
+
+    function saveData() {
+      localStorage.setItem('hm_patients', JSON.stringify(db.patients));
+      localStorage.setItem('hm_visits', JSON.stringify(db.visits));
+      localStorage.setItem('hm_labs', JSON.stringify(db.labs));
+      localStorage.setItem('hm_payments', JSON.stringify(db.payments));
+      updateDashboard();
+    }
+
+    function switchView(viewId, el) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + viewId).classList.add('active');
+      if (el) {
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('view-title').innerText = el.innerText;
+      }
+      refreshCurrentViewData(viewId);
+    }
+
+    function refreshCurrentViewData(id) {
+      if (id === 'patients') renderPatients();
+      if (id === 'visits' || id === 'labs') populatePatientDropdowns();
+      if (id === 'labs') renderLabs();
+      if (id === 'billing') renderBilling();
+      if (id === 'report-collection') renderCollectionReport();
+      if (id === 'report-patients') renderPatientReport();
+      if (id === 'report-doctors') renderDoctorReport();
+      if (id === 'report-labs') renderLabReport();
+    }
+
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    function updateDashboard() {
+      document.getElementById('dash-patients').innerText = db.patients.length;
+      const todayStr = new Date().toISOString().split('T')[0];
+      let todayCol = 0;
+      db.payments.forEach(p => {
+        if (p.date.startsWith(todayStr)) todayCol += p.amount;
+      });
+      document.getElementById('dash-collection').innerText = 'Tk ' + todayCol.toLocaleString();
+      let pendingLabs = db.labs.filter(l => l.status === 'Pending').length;
+      document.getElementById('dash-pending-labs').innerText = pendingLabs;
+    }
+
+    // Patient Registration
+    function handlePatientSubmit(e) {
+      e.preventDefault();
+      const id = 'P-' + String(db.patients.length + 1).padStart(4, '0');
+      const patient = {
+        id,
+        name: document.getElementById('pat-name').value,
+        age: Number(document.getElementById('pat-age').value),
+        sex: document.getElementById('pat-sex').value,
+        phone: document.getElementById('pat-phone').value,
+        address: document.getElementById('pat-address').value,
+        date: new Date().toISOString()
+      };
+      db.patients.push(patient);
+      saveData();
+      alert('Patient registered with ID: ' + id);
+      e.target.reset();
+      renderPatients();
+    }
+
+    function renderPatients() {
+      const query = (document.getElementById('pat-search').value || '').toLowerCase();
+      const tbody = document.getElementById('patients-table-body');
+      tbody.innerHTML = '';
+      db.patients.filter(p => p.name.toLowerCase().includes(query) || p.phone.includes(query)).forEach(p => {
+        tbody.innerHTML += `<tr>
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.age}</td>
+          <td>${p.sex}</td>
+          <td>${p.phone}</td>
+          <td>${p.address}</td>
+          <td>${new Date(p.date).toLocaleDateString()}</td>
+        </tr>`;
+      });
+    }
+
+    function populatePatientDropdowns() {
+      ['visit-patient', 'lab-patient'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '';
+        db.patients.forEach(p => {
+          sel.innerHTML += `<option value="${p.id}">${p.id} - ${p.name} (${p.phone})</option>`;
+        });
+      });
+    }
+
+    // Doctor Visit
+    function handleVisitSubmit(e) {
+      e.preventDefault();
+      const patientId = document.getElementById('visit-patient').value;
+      const doctorStr = document.getElementById('visit-doctor').value;
+      const fee = doctorStr.includes('1,500') ? 1500 : doctorStr.includes('1,200') ? 1200 : doctorStr.includes('1,000') ? 1000 : 800;
+      
+      const visit = {
+        id: 'V-' + Date.now(),
+        patientId,
+        doctor: doctorStr.split(' - ')[0],
+        fee,
+        problem: document.getElementById('visit-problem').value,
+        medicines: document.getElementById('visit-medicines').value,
+        date: new Date().toISOString()
+      };
+      db.visits.push(visit);
+      db.payments.push({ id: 'PAY-' + Date.now(), patientId, type: 'visit', amount: fee, date: new Date().toISOString() });
+      saveData();
+      alert('Visit saved and fee of Tk ' + fee + ' added to bill.');
+      e.target.reset();
+    }
+
+    // Lab Tests
+    function handleLabSubmit(e) {
+      e.preventDefault();
+      const patientId = document.getElementById('lab-patient').value;
+      const testInfo = document.getElementById('lab-test-item').value.split('|');
+      const testName = testInfo[0];
+      const cost = Number(testInfo[1]);
+
+      const lab = {
+        id: 'L-' + Date.now(),
+        patientId,
+        testName,
+        cost,
+        status: 'Pending',
+        date: new Date().toISOString()
+      };
+      db.labs.push(lab);
+      db.payments.push({ id: 'PAY-' + Date.now(), patientId, type: 'lab', amount: cost, date: new Date().toISOString() });
+      saveData();
+      alert('Lab test ordered successfully.');
+      renderLabs();
+    }
+
+    function renderLabs() {
+      const tbody = document.getElementById('labs-table-body');
+      tbody.innerHTML = '';
+      db.labs.forEach(l => {
+        const pat = db.patients.find(p => p.id === l.patientId);
+        tbody.innerHTML += `<tr>
+          <td>${l.id}</td>
+          <td>${pat ? pat.name : l.patientId}</td>
+          <td>${l.testName}</td>
+          <td>Tk ${l.cost.toLocaleString()}</td>
+          <td><b>${l.status}</b></td>
+          <td>${l.status === 'Pending' ? `<button class="btn" onclick="completeLab('${l.id}')">Mark Done</button>` : 'Completed'}</td>
+        </tr>`;
+      });
+    }
+
+    function completeLab(id) {
+      const lab = db.labs.find(l => l.id === id);
+      if (lab) {
+        lab.status = 'Done';
+        saveData();
+        renderLabs();
+      }
+    }
+
+    // Billing
+    function renderBilling() {
+      const tbody = document.getElementById('billing-table-body');
+      tbody.innerHTML = '';
+      db.patients.forEach(pat => {
+        let total = 0;
+        db.payments.forEach(pay => {
+          if (pay.patientId === pat.id) total += pay.amount;
+        });
+        tbody.innerHTML += `<tr>
+          <td>${pat.id}</td>
+          <td>${pat.name}</td>
+          <td>Tk ${total.toLocaleString()}</td>
+          <td>Tk ${total.toLocaleString()}</td>
+          <td>Tk 0</td>
+          <td>Paid in Full</td>
+        </tr>`;
+      });
+    }
+
+    // Reports
+    function setDefaultDates() {
+      const today = new Date().toISOString().split('T')[0];
+      const monthAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+      ['col-from', 'pat-rep-from', 'doc-rep-from', 'lab-rep-from'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = monthAgo;
+      });
+      ['col-to', 'pat-rep-to', 'doc-rep-to', 'lab-rep-to'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = today;
+      });
+    }
+
+    function renderCollectionReport() {
+      setDefaultDates();
+      const from = document.getElementById('col-from').value;
+      const to = document.getElementById('col-to').value;
+      let visitTotal = 0;
+      let labTotal = 0;
+
+      db.payments.forEach(p => {
+        const pDate = p.date.split('T')[0];
+        if (pDate >= from && pDate <= to) {
+          if (p.type === 'visit') visitTotal += p.amount;
+          if (p.type === 'lab') labTotal += p.amount;
+        }
+      });
+
+      document.getElementById('rep-col-visits').innerText = 'Tk ' + visitTotal.toLocaleString();
+      document.getElementById('rep-col-labs').innerText = 'Tk ' + labTotal.toLocaleString();
+      document.getElementById('rep-col-total').innerText = 'Tk ' + (visitTotal + labTotal).toLocaleString();
+    }
+
+    function renderPatientReport() {
+      setDefaultDates();
+      const from = document.getElementById('pat-rep-from').value;
+      const to = document.getElementById('pat-rep-to').value;
+      const tbody = document.getElementById('rep-patients-body');
+      tbody.innerHTML = '';
+
+      db.patients.forEach(p => {
+        const pDate = p.date.split('T')[0];
+        if (pDate >= from && pDate <= to) {
+          tbody.innerHTML += `<tr>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.age}</td>
+            <td>${p.sex}</td>
+            <td>${p.phone}</td>
+            <td>${new Date(p.date).toLocaleDateString()}</td>
+          </tr>`;
+        }
+      });
+    }
+
+    function renderDoctorReport() {
+      setDefaultDates();
+      const from = document.getElementById('doc-rep-from').value;
+      const to = document.getElementById('doc-rep-to').value;
+      const tbody = document.getElementById('rep-doctors-body');
+      tbody.innerHTML = '';
+
+      const docStats = {};
+      db.visits.forEach(v => {
+        const vDate = v.date.split('T')[0];
+        if (vDate >= from && vDate <= to) {
+          if (!docStats[v.doctor]) docStats[v.doctor] = { count: 0, fees: 0 };
+          docStats[v.doctor].count++;
+          docStats[v.doctor].fees += v.fee;
+        }
+      });
+
+      for (const [doc, stats] of Object.entries(docStats)) {
+        tbody.innerHTML += `<tr>
+          <td>${doc}</td>
+          <td>${stats.count}</td>
+          <td>Tk ${stats.fees.toLocaleString()}</td>
+        </tr>`;
+      }
+    }
+
+    function renderLabReport() {
+      setDefaultDates();
+      const from = document.getElementById('lab-rep-from').value;
+      const to = document.getElementById('lab-rep-to').value;
+      let total = 0, done = 0, pending = 0;
+
+      db.labs.forEach(l => {
+        const lDate = l.date.split('T')[0];
+        if (lDate >= from && lDate <= to) {
+          total++;
+          if (l.status === 'Done') done++;
+          else pending++;
+        }
+      });
+
+      document.getElementById('rep-lab-total').innerText = total;
+      document.getElementById('rep-lab-done').innerText = done;
+      document.getElementById('rep-lab-pending').innerText = pending;
+    }
+
+    // AI Chat Integration
+    async function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const question = input.value.trim();
+      if (!question) return;
+
+      const chatMessages = document.getElementById('chat-messages');
+      chatMessages.innerHTML += `<div class="msg user">${escapeHtml(question)}</div>`;
+      input.value = '';
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      const loadingId = 'loading-' + Date.now();
+      chatMessages.innerHTML += `<div class="msg assistant" id="${loadingId}">Thinking...</div>`;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      try {
+        const response = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, data: db })
+        });
+        const resJson = await response.json();
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) {
+          let answerText = resJson.answer || resJson.error || "No answer received.";
+          // Convert **bold** markdown to HTML bold
+          answerText = answerText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          loadEl.innerHTML = answerText;
+        }
+      } catch (err) {
+        const loadEl = document.getElementById(loadingId);
+        if (loadEl) loadEl.innerText = "Error connecting to AI assistant server.";
+      }
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Sample Data Generator
+    function loadSampleData() {
+      const now = Date.now();
+      const dateFor = daysAgo => new Date(now - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+      const patientNames = [
+        'Karim Ahmed', 'Nusrat Jahan', 'Rafiqul Islam', 'Sadia Rahman', 'Tanvir Hossain',
+        'Mim Akter', 'Shakil Khan', 'Farzana Yasmin', 'Imran Chowdhury', 'Jannatul Ferdous',
+        'Mehedi Hasan', 'Sumaiya Islam', 'Arif Mahmud', 'Tania Sultana', 'Fahim Rahman',
+        'Rumana Akter', 'Sabbir Hossain', 'Maliha Noor', 'Asif Iqbal', 'Priya Das'
+      ];
+      const areas = ['Gulshan', 'Banani', 'Dhanmondi', 'Uttara', 'Mirpur'];
+      const doctors = [
+        { name: 'Dr. Rahman (Medicine)', fee: 1000, problem: 'Fever and cough', medicines: 'Napa Extra' },
+        { name: 'Dr. Sultana (Cardiology)', fee: 1500, problem: 'Chest discomfort', medicines: 'Aspirin' },
+        { name: 'Dr. Ahmed (Pediatrics)', fee: 800, problem: 'Seasonal flu', medicines: 'Paracetamol syrup' },
+        { name: 'Dr. Karim (Surgery)', fee: 1200, problem: 'Abdominal pain', medicines: 'Omeprazole' }
+      ];
+      const labTests = [
+        { name: 'CBC', cost: 500 },
+        { name: 'X-Ray Chest', cost: 800 },
+        { name: 'Blood Sugar', cost: 300 },
+        { name: 'USG Abdomen', cost: 1200 },
+        { name: 'Lipid Profile', cost: 1000 }
+      ];
+
+      const samplePatients = patientNames.map((name, index) => ({
+        id: 'P-' + String(index + 1).padStart(4, '0'),
+        name,
+        age: 18 + (index * 7) % 58,
+        sex: index % 3 === 0 ? 'Female' : 'Male',
+        phone: '017' + String(10000000 + index * 123456).slice(0, 8),
+        address: areas[index % areas.length] + ', Dhaka',
+        date: dateFor(index % 10)
+      }));
+
+      const sampleVisits = Array.from({ length: 20 }, (_, index) => {
+        const doctor = doctors[index % doctors.length];
+        return {
+          id: 'V-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[index].id,
+          doctor: doctor.name,
+          fee: doctor.fee,
+          problem: doctor.problem,
+          medicines: doctor.medicines,
+          date: dateFor(index % 10)
+        };
+      });
+
+      const sampleLabs = Array.from({ length: 20 }, (_, index) => {
+        const test = labTests[index % labTests.length];
+        return {
+          id: 'L-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[(index + 1) % samplePatients.length].id,
+          testName: test.name,
+          cost: test.cost,
+          status: index % 3 === 0 ? 'Pending' : 'Done',
+          date: dateFor(index % 10)
+        };
+      });
+
+      const samplePayments = Array.from({ length: 20 }, (_, index) => {
+        const isVisitPayment = index % 2 === 0;
+        const source = isVisitPayment ? doctors[index % doctors.length] : labTests[index % labTests.length];
+        return {
+          id: 'PAY-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[(index + 2) % samplePatients.length].id,
+          type: isVisitPayment ? 'visit' : 'lab',
+          amount: isVisitPayment ? source.fee : source.cost,
+          date: dateFor(index % 10)
+        };
+      });
+
+      db.patients = samplePatients;
+      db.visits = sampleVisits;
+      db.labs = sampleLabs;
+      db.payments = samplePayments;
+      saveData();
+      alert('Sample data loaded successfully!');
+      refreshCurrentViewData(document.querySelector('.nav-links a.active').innerText.toLowerCase().includes('dashboard') ? 'dashboard' : 'patients');
+    }
+
+    updateDashboard();
+  </script>
+</body>
+</html>
