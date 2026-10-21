@@ -30,21 +30,11 @@ node --version
 
 ## Setup
 
-1. Open PowerShell in the project folder:
-
-   ```powershell
-   cd "C:\Users\Mahir\Desktop\New folder"
-   ```
+1. Open PowerShell in the project folder.
 
 2. Create a file named `.env` in the same folder as `server.js`.
 
 3. Add your ChatterMate API key:
-
-   ```env
-   CHATTERMATE_API_KEY=your_api_key_here
-   ```
-
-   Do not commit `.env` or share the API key publicly.
 
 ## Run the website
 
