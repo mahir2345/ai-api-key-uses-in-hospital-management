@@ -718,23 +718,35 @@
       chatMessages.innerHTML += `<div class="msg assistant" id="${loadingId}">Thinking...</div>`;
       chatMessages.scrollTop = chatMessages.scrollHeight;
 
+      const loadEl = document.getElementById(loadingId);
+      if (window.location.protocol === 'file:') {
+        if (loadEl) loadEl.innerText = "Start the server with \"node server.js\" and open http://localhost:3000.";
+        return;
+      }
+
       try {
         const response = await fetch('/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question, data: db })
         });
-        const resJson = await response.json();
-        const loadEl = document.getElementById(loadingId);
+        const responseText = await response.text();
+        let resJson;
+        try {
+          resJson = JSON.parse(responseText);
+        } catch {
+          throw new Error(`The server returned an invalid response (HTTP ${response.status}).`);
+        }
+
         if (loadEl) {
+          if (!response.ok) throw new Error(resJson.error || `The server returned HTTP ${response.status}.`);
           let answerText = resJson.answer || resJson.error || "No answer received.";
           // Convert **bold** markdown to HTML bold
           answerText = answerText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           loadEl.innerHTML = answerText;
         }
       } catch (err) {
-        const loadEl = document.getElementById(loadingId);
-        if (loadEl) loadEl.innerText = "Error connecting to AI assistant server.";
+        if (loadEl) loadEl.innerText = `AI assistant error: ${err.message}`;
       }
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -745,25 +757,75 @@
 
     // Sample Data Generator
     function loadSampleData() {
-      const samplePatients = [
-        { id: 'P-0001', name: 'Karim Ahmed', age: 35, sex: 'Male', phone: '01711112222', address: 'Gulshan, Dhaka', date: new Date().toISOString() },
-        { id: 'P-0002', name: 'Nusrat Jahan', age: 28, sex: 'Female', phone: '01822223333', address: 'Banani, Dhaka', date: new Date().toISOString() },
-        { id: 'P-0003', name: 'Rafiqul Islam', age: 45, sex: 'Male', phone: '01933334444', address: 'Dhanmondi, Dhaka', date: new Date().toISOString() }
+      const now = Date.now();
+      const dateFor = daysAgo => new Date(now - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+      const patientNames = [
+        'Karim Ahmed', 'Nusrat Jahan', 'Rafiqul Islam', 'Sadia Rahman', 'Tanvir Hossain',
+        'Mim Akter', 'Shakil Khan', 'Farzana Yasmin', 'Imran Chowdhury', 'Jannatul Ferdous',
+        'Mehedi Hasan', 'Sumaiya Islam', 'Arif Mahmud', 'Tania Sultana', 'Fahim Rahman',
+        'Rumana Akter', 'Sabbir Hossain', 'Maliha Noor', 'Asif Iqbal', 'Priya Das'
       ];
-      const sampleVisits = [
-        { id: 'V-1', patientId: 'P-0001', doctor: 'Dr. Rahman (Medicine)', fee: 1000, problem: 'Fever and cough', medicines: 'Napa Extra', date: new Date().toISOString() },
-        { id: 'V-2', patientId: 'P-0002', doctor: 'Dr. Sultana (Cardiology)', fee: 1500, problem: 'Chest pain', medicines: 'Aspirin', date: new Date().toISOString() }
+      const areas = ['Gulshan', 'Banani', 'Dhanmondi', 'Uttara', 'Mirpur'];
+      const doctors = [
+        { name: 'Dr. Rahman (Medicine)', fee: 1000, problem: 'Fever and cough', medicines: 'Napa Extra' },
+        { name: 'Dr. Sultana (Cardiology)', fee: 1500, problem: 'Chest discomfort', medicines: 'Aspirin' },
+        { name: 'Dr. Ahmed (Pediatrics)', fee: 800, problem: 'Seasonal flu', medicines: 'Paracetamol syrup' },
+        { name: 'Dr. Karim (Surgery)', fee: 1200, problem: 'Abdominal pain', medicines: 'Omeprazole' }
       ];
-      const sampleLabs = [
-        { id: 'L-1', patientId: 'P-0001', testName: 'CBC', cost: 500, status: 'Done', date: new Date().toISOString() },
-        { id: 'L-2', patientId: 'P-0002', testName: 'X-Ray Chest', cost: 800, status: 'Pending', date: new Date().toISOString() }
+      const labTests = [
+        { name: 'CBC', cost: 500 },
+        { name: 'X-Ray Chest', cost: 800 },
+        { name: 'Blood Sugar', cost: 300 },
+        { name: 'USG Abdomen', cost: 1200 },
+        { name: 'Lipid Profile', cost: 1000 }
       ];
-      const samplePayments = [
-        { id: 'PAY-1', patientId: 'P-0001', type: 'visit', amount: 1000, date: new Date().toISOString() },
-        { id: 'PAY-2', patientId: 'P-0002', type: 'visit', amount: 1500, date: new Date().toISOString() },
-        { id: 'PAY-3', patientId: 'P-0001', type: 'lab', amount: 500, date: new Date().toISOString() },
-        { id: 'PAY-4', patientId: 'P-0002', type: 'lab', amount: 800, date: new Date().toISOString() }
-      ];
+
+      const samplePatients = patientNames.map((name, index) => ({
+        id: 'P-' + String(index + 1).padStart(4, '0'),
+        name,
+        age: 18 + (index * 7) % 58,
+        sex: index % 3 === 0 ? 'Female' : 'Male',
+        phone: '017' + String(10000000 + index * 123456).slice(0, 8),
+        address: areas[index % areas.length] + ', Dhaka',
+        date: dateFor(index % 10)
+      }));
+
+      const sampleVisits = Array.from({ length: 20 }, (_, index) => {
+        const doctor = doctors[index % doctors.length];
+        return {
+          id: 'V-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[index].id,
+          doctor: doctor.name,
+          fee: doctor.fee,
+          problem: doctor.problem,
+          medicines: doctor.medicines,
+          date: dateFor(index % 10)
+        };
+      });
+
+      const sampleLabs = Array.from({ length: 20 }, (_, index) => {
+        const test = labTests[index % labTests.length];
+        return {
+          id: 'L-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[(index + 1) % samplePatients.length].id,
+          testName: test.name,
+          cost: test.cost,
+          status: index % 3 === 0 ? 'Pending' : 'Done',
+          date: dateFor(index % 10)
+        };
+      });
+
+      const samplePayments = Array.from({ length: 20 }, (_, index) => {
+        const isVisitPayment = index % 2 === 0;
+        const source = isVisitPayment ? doctors[index % doctors.length] : labTests[index % labTests.length];
+        return {
+          id: 'PAY-' + String(index + 1).padStart(3, '0'),
+          patientId: samplePatients[(index + 2) % samplePatients.length].id,
+          type: isVisitPayment ? 'visit' : 'lab',
+          amount: isVisitPayment ? source.fee : source.cost,
+          date: dateFor(index % 10)
+        };
+      });
 
       db.patients = samplePatients;
       db.visits = sampleVisits;

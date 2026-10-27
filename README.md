@@ -14,7 +14,7 @@ A lightweight hospital management website with an AI-powered report assistant. T
 - Doctor-wise report
 - Lab test report
 - AI Report Assistant for questions about the current report data
-- Sample data generator for quick testing
+- Sample data generator with 20 patients, visits, lab tests, and payments
 - Browser `localStorage` persistence for the hospital records
 
 ## Requirements

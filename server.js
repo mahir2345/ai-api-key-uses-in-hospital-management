@@ -252,6 +252,10 @@ const server = http.createServer((req, res) => {
   serveStatic(req, res);
 });
 
-server.listen(PORT, () => {
-  console.log(`Hospital website running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Hospital website running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { handleAsk };
